@@ -74,8 +74,16 @@ def theta1_func(H_value,R,n1,n2,D):
     H=lambda theta1 :R*np.sin(theta1)/np.cos(np.arcsin(n1/n2*np.sin(theta1))-theta1)*1/(1-np.tan(np.arcsin(n1/n2*np.sin(theta1))-theta1)/np.tan(np.arcsin(n1/n2*np.sin(theta1))))
     theta=inversefunc(H,y_values=H_value,domain=[-tc, tc])
     h=R*np.sin(theta)/np.cos(np.arcsin(n1/n2*np.sin(theta))-theta)+D*np.tan(np.arcsin(n1/n2*np.sin(theta))-theta)
-    theta_scattering=np.arcsin(R*np.sin(theta)/h)
+    if H_value>=0:
+        theta_scattering=np.arcsin(R*np.sin(theta)/h)
+    else:
+        theta_scattering=math.pi-np.arcsin(R*np.sin(theta)/h)
     return h,theta_scattering
+
+def q_vector(wave_lenght,theta,n):
+    q=4*math.pi*n*np.sin(theta/2);
+    l=1.0/q;
+    return q,l
 
 def f_brownian(n,wavelength,theta,T,nu,r):
     kb=1.38064852*10**-23
