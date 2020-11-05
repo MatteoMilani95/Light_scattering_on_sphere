@@ -41,9 +41,9 @@ _config_brownian = {
         'particles_radius' : 25, # in nm
         }
 _config_data_analysis = {
-        'cI_file_nber' : 2,  #Number of cI files to process
-        'cI_file_folder_path' : r"E:\20201029_gelation2_silicagel_0036M_15VF_15ul\out\all_12x5_ROI",  #Path of the folder where the cI files are stored
-        'out_folder_path': r"E:\20201029_gelation2_silicagel_0036M_15VF_15ul\out\all_12x5_ROI",  #Path of the folder where the cI files are stored
+        'cI_file_nber' : 30,  #Number of cI files to process
+        'cI_file_folder_path' : r"E:\Matteo\PHD\light_scattering\20201029_gelation2_silicagel_0036M_15VF_15ul\out\prova_0050_6x5_ROI",  #Path of the folder where the cI files are stored
+        'out_folder_path': r"E:\Matteo\PHD\light_scattering\20201029_gelation2_silicagel_0036M_15VF_15ul\out\prova_0050_6x5_ROI",  #Path of the folder where the cI files are stored
         'cI_file_name' : r'ROI',     #Name of the CI files (without numbers)
         'cI_file_digits' : 4,    #Number of digits in the CI file name
         'cI_file_first_number' : 1,  #ID of the first cI file
@@ -766,7 +766,7 @@ if _config['data_analysis'] == True:
         
         if fitting_method=='Across all lag times':    
             #Plots the data and saves the obtained figure
-            image_names_df.iloc[(i,2)]=_config_data_analysis['out_folder_path'] + '\\out\\' + cI_file_name + ROI_name_list[i] + '_g2-1_vs_tau.png'
+            image_names_df.iloc[(i,2)]=_config_data_analysis['out_folder_path'] + '\\out\\' + _config_data_analysis['cI_file_name'] + ROI_name_list[i] + '_g2-1_vs_tau.png'
             plot_g2_1(g2_for_calc_df, ROI_list[i], ROI_list[i], image_names_df.iloc[(i,2)])
             
             
