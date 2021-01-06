@@ -24,8 +24,8 @@ def BeadRayTrace(n1,n2,x,plot = False ):
     theta1 = np.arcsin( n2 / n1 * np.sin( theta2 ) )
     gamma = theta2 - theta1 
     
-    beta = ( np.cos( theta2 )**2 - np.cos( theta1 ) ) / (np.cos( theta2 )**2 - 1)      #np.cos( theta1 ) * ( np.cos( gamma ) - 1 ) / ( np.cos( theta1 ) * np.cos( theta2 ) - 1 )
-    alpha = np.cos( theta2 ) * ( np.cos( theta1 ) - 1 ) / (np.cos( theta2 )**2 - 1)    #1 - ( np.cos( gamma ) - 1 ) / ( np.cos( theta1 ) * np.cos( theta2 ) - 1 )
+    beta = ( np.cos( theta1 ) -  np.cos( gamma ) * np.cos( theta2 ) ) / ( 1 - np.cos( theta2 )**2 )
+    alpha = np.cos( gamma ) - beta * np.cos( theta2 )
     
     b = alpha * a + beta * r
     b_0 =  r - b 
@@ -49,7 +49,7 @@ def BeadRayTrace(n1,n2,x,plot = False ):
         ax.set_xlim([-1.5, 1.5])
         ax.set_ylim([-1.5, 1.5])
         ax.set_zlim([-1.5, 1.5])
-        ax.view_init(20, 120)
+        ax.view_init(10, 120)
         
         ax.scatter(a_0[0], a_0[1], a_0[2], color="g", s=50)
         
@@ -63,7 +63,7 @@ def BeadRayTrace(n1,n2,x,plot = False ):
         
         ax.grid(True)
         
-        plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Ooptical_Path.png', dpi=300)
+        plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\RayTracing\\Ooptical_Path.png', dpi=300)
         return a_0,a,b_0,b,r_0,r
     else:
         print('no plot has been saved')
@@ -125,36 +125,87 @@ def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 
     I = integrate.quad(func , t0, tmax)
     
-    return I[0]
+    return I[0],theta_scattering
 
-I = IntensityProfile(n1 = 1.33, n2 = 1, x = [-0.7,0.0], beam_waist=0.1)
+########## CHECK AT Z = 0 ###########
+line = np.linspace(-1,1,50)
+point = []
 
+
+for j in range(len(line)):
+    I,theta_scattering = IntensityProfile(n1 = 1.33, n2 = 1, x = [line[j],0], beam_waist=0.2,plot=True)
+    point.append(np.array([line[j],0,I,theta_scattering*180/np.pi]))
+    
+
+x_=[]
+z_=[]
+Intesity_=[]
+theta_s_=[]
+
+for i in range(len(point)):
+    x_.append(point[i][0])
+    z_.append(point[i][1])
+    Intesity_.append(point[i][2])
+    theta_s_.append(point[i][3])
+
+plt.figure()
+plt.plot(x_,Intesity_,'o')
+plt.xlabel("x")
+plt.ylabel("scattering angle [grad]")
+plt.legend(loc='upper left')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Intesity_plot_.png', dpi=300)
+
+plt.figure()
+plt.plot(x_,theta_s_,'o')
+plt.xlabel("x")
+plt.ylabel("Intensity")
+plt.legend(loc='upper left')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\theta_plot_.png', dpi=300)
+
+########## COMPLETE PROGRAM ###########
+'''
 raw = np.linspace(-1,1,50)
 columns = np.linspace(-1,1,50)
 points = []
 
 for i in range(len(columns)):
     for j in range(len(raw)):
-        I = IntensityProfile(n1 = 1.33, n2 = 1, x = [raw[j],columns[i]], beam_waist=0.1)
-        points.append(np.array([raw[j],columns[i],I]))
+        I,theta_scattering = IntensityProfile(n1 = 1.36, n2 = 1, x = [raw[j],columns[i]], beam_waist=0.2)
+        points.append(np.array([raw[j],columns[i],I,theta_scattering*180/np.pi]))
     
 
 x=[]
 z=[]
 Intesity=[]
+theta_s=[]
 
 for i in range(len(points)):
     x.append(points[i][0])
     z.append(points[i][1])
     Intesity.append(points[i][2])
+    theta_s.append(points[i][3])
 
-
-plt.scatter(x, z, c=Intesity,cmap=plt.cm.jet)
+plt.figure()
+plt.scatter(x, z, c=Intesity)
 plt.xlabel("x")
 plt.ylabel("z")
 plt.legend(loc='upper left')
 theta = np.linspace(0, 2 * np.pi ,1000)
 plt.plot( np.cos(theta),  np.sin(theta))
 clb = plt.colorbar()
-clb.set_label('Intensity',  rotation=270)
+clb.set_label('Intensity', labelpad=10, rotation=270)
+plt.axes().set_aspect('equal', 'datalim')
 plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Intesity_plot.png', dpi=300)
+
+plt.figure()
+plt.scatter(x, z, c=theta_s)
+plt.xlabel("x")
+plt.ylabel("z")
+plt.legend(loc='upper left')
+theta = np.linspace(0, 2 * np.pi ,1000)
+plt.plot( np.cos(theta),  np.sin(theta))
+clb = plt.colorbar()
+clb.set_label('Scattering angle ', labelpad=10, rotation=270)
+plt.axes().set_aspect('equal', 'datalim')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\scattang_plot.png', dpi=300)
+'''
