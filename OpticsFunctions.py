@@ -112,7 +112,7 @@ def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     df = 2
     sigma = beam_waist
     
-    a_0,a,b_0,b,r_0,r = BeadRayTrace(n1, n2, [x[0],x[1]] ,plot=True)
+    a_0,a,b_0,b,r_0,r = BeadRayTrace(n1, n2, [x[0],x[1]] ,plot)
     
     theta_scattering = np.arccos( np.dot(l,b) )
     q_scattering = 4 * np.pi * n1 * np.sin( theta_scattering / 2 )
@@ -122,9 +122,38 @@ def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     
     t0,tmax = LineSphereIntersection(a_0, b_0)
     
-    func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2  
+    func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 
     I = integrate.quad(func , t0, tmax)
     
-    return I
+    return I[0]
 
 I = IntensityProfile(n1 = 1.33, n2 = 1, x = [-0.7,0.0], beam_waist=0.1)
+
+raw = np.linspace(-1,1,50)
+columns = np.linspace(-1,1,50)
+points = []
+
+for i in range(len(columns)):
+    for j in range(len(raw)):
+        I = IntensityProfile(n1 = 1.33, n2 = 1, x = [raw[j],columns[i]], beam_waist=0.1)
+        points.append(np.array([raw[j],columns[i],I]))
+    
+
+x=[]
+z=[]
+Intesity=[]
+
+for i in range(len(points)):
+    x.append(points[i][0])
+    z.append(points[i][1])
+    Intesity.append(points[i][2])
+
+
+plt.scatter(x, z, c=Intesity,cmap=plt.cm.jet)
+plt.xlabel("x")
+plt.ylabel("z")
+plt.legend(loc='upper left')
+theta = np.linspace(0, 2 * np.pi ,1000)
+plt.plot( np.cos(theta),  np.sin(theta))
+plt.colorbar()
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Intesity_plot.png', dpi=300)
