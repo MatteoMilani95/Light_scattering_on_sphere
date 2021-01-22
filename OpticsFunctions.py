@@ -70,6 +70,67 @@ def BeadRayTrace(n1,n2,x,plot = False ):
     
     return a_0,a,b_0,b,r_0,r
 
+
+
+def LaserTilt(n1,n2,x,plot = False ):
+    
+    a_0 = np.array( [x[0], x[1], x[2]] )
+    r_0 = np.array( [0, 0, 0] )
+    
+    a = np.array( [1, 0, 0] )
+    r = a_0 #np.array( [x[0], np.sqrt( 1 - x[0]**2 - x[1]**2), x[1]] )
+    
+    theta2 = np.arccos( np.dot(a,r) )
+    theta1 = np.arcsin( n2 / n1 * np.sin( theta2 ) )
+    gamma = theta2 - theta1 
+    
+    beta = ( np.cos( theta1 ) -  np.cos( gamma ) * np.cos( theta2 ) ) / ( 1 - np.cos( theta2 )**2 )
+    alpha = np.cos( gamma ) - beta * np.cos( theta2 )
+    
+    b = alpha * a + beta * r
+    b_0 =  r - b 
+
+    
+    if plot == True:
+        X = np.array( [a_0[0],b_0[0],r_0[0]])
+        Y = np.array( [a_0[1],b_0[1],r_0[1]])
+        Z = np.array( [a_0[2],b_0[2],r_0[2]])
+        
+        U = np.array( [a[0],b[0],r[0]])
+        V = np.array( [a[1],b[1],r[1]])
+        W = np.array( [a[2],b[2],r[2]])
+        
+        
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.quiver(X, Y, Z, U, V, W, length=1, normalize=True,arrow_length_ratio=0.2)
+        
+        ax.set_xlim([-1.5, 1.5])
+        ax.set_ylim([-1.5, 1.5])
+        ax.set_zlim([-1.5, 1.5])
+        ax.view_init(10, 120)
+        
+        ax.scatter(a_0[0], a_0[1], a_0[2], color="g", s=50)
+        
+        # draw sphere
+        u, v = np.mgrid[0:2*np.pi:80j, 0:np.pi:80j]
+        x = np.cos(u)*np.sin(v)
+        y = np.sin(u)*np.sin(v)
+        z = np.cos(v)
+        ax.plot_wireframe(x, y, z, color="g",linewidth = 0.1)
+        
+        
+        ax.grid(True)
+        
+        plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\RayTracing\\Ooptical_Path.png', dpi=300)
+        return b
+    else:
+        print('no plot has been saved')
+    
+    return b
+
+
 def LineSphereIntersection( a_0 , b_0 , Sc = [0,0,0], R =1 ):
     '''
     pass the two points that identify the line
@@ -105,8 +166,13 @@ def LineSphereIntersection( a_0 , b_0 , Sc = [0,0,0], R =1 ):
 
 def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     
-    A = np.array( [-1 , 0 , 0] )
-    l = np.array( [1 , 0 , 0] )
+    zl=0.2
+    xl=np.sqrt( 1 - zl**2 )
+    A = np.array( [-xl , 0 , zl] )
+    #l = np.array( [1 , 0 , 0] )
+    
+    l = LaserTilt(n1,n2,A,plot = False )
+    
     p = np.array( [0 , 0 , -1] )
     
     df = 2
@@ -128,6 +194,7 @@ def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     return I[0],theta_scattering
 
 ########## CHECK AT Z = 0 ###########
+'''
 line = np.linspace(-1,1,50)
 point = []
 
@@ -208,4 +275,3 @@ clb = plt.colorbar()
 clb.set_label('Scattering angle ', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
 plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\scattang_plot.png', dpi=300)
-'''
