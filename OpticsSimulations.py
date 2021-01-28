@@ -187,7 +187,7 @@ def LineSphereIntersection( a_0 , b_0 , Sc = [0,0,0], R =1 ):
 
 def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     
-    zl=0.6
+    zl=0.0
     xl=np.sqrt( 1 - zl**2 )
     A = np.array( [xl , 0 , zl] )
     #l = np.array( [1 , 0 , 0] )
@@ -213,12 +213,24 @@ def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     
     return I[0],theta_scattering
 
+
+def LinePlaneIntersection(l_0,l):
+    normal_plane = np.array([0,1,0])
+    p_0 = np.array([1,0,0])
+    d =np.dot( (p_0 - l_0) , normal_plane ) / np.dot( l,normal_plane )
+    
+    interseption_point = l_0 + l * d
+    
+    return interseption_point
+
 def DifferentialPath(n1 , n2, x, plot = False):
     a_0,a,b_0,b,r_0,r = BeadRayTrace(n1, n2, [x[0],x[1]] ,plot )
+    interseption = LinePlaneIntersection(b_0,b)
     
-    Dx = x[0]-b_0[0]
-    Dz = x[1]-b_0[2]
-    return Dx,Dz
+    Dx = np.abs(x[0]-interseption[0])
+    Dz = np.abs(x[1]-interseption[2])
+    D = np.sqrt( Dx**2 + Dz**2 )
+    return Dx,Dz,D
 
 ########## CHECK AT Z = 0 ###########
 '''
@@ -266,9 +278,9 @@ dpoints = []
 for i in range(len(columns)):
     for j in range(len(raw)):
         I,theta_scattering = IntensityProfile(n1 = 1.36, n2 = 1, x = [raw[j],columns[i]], beam_waist=0.2,plot=False)
-        dx,dz = DifferentialPath(n1 = 1.36, n2 = 1, x = [raw[j],columns[i]],plot=False)
+        dx,dz,d = DifferentialPath(n1 = 1.36, n2 = 1, x = [raw[j],columns[i]],plot=False)
         points.append(np.array([raw[j],columns[i],I,theta_scattering*180/np.pi]))
-        dpoints.append(np.array([dx,dz]))
+        dpoints.append(np.array([dx,dz,d]))
     
 
 x=[]
@@ -277,6 +289,7 @@ Intesity=[]
 theta_s=[]
 Dx = []
 Dz = []
+D = []
 
 for i in range(len(points)):
     x.append(points[i][0])
@@ -285,6 +298,7 @@ for i in range(len(points)):
     theta_s.append(points[i][3])
     Dx.append(dpoints[i][0])
     Dz.append(dpoints[i][1])
+    D.append(dpoints[i][2])
 
 plt.figure()
 plt.scatter(x, z, c=Intesity)
@@ -337,3 +351,16 @@ clb.set_label('Dz ', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
 plt.title('Dz plot')
 plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Dz.png', dpi=300)
+
+plt.figure()
+plt.scatter(x, z, c=D)
+plt.xlabel("x [mm]")
+plt.ylabel("z [mm]")
+plt.legend(loc='upper left')
+theta = np.linspace(0, 2 * np.pi ,1000)
+plt.plot( np.cos(theta),  np.sin(theta))
+clb = plt.colorbar()
+clb.set_label('Dz ', labelpad=10, rotation=270)
+plt.axes().set_aspect('equal', 'datalim')
+plt.title('Dz plot')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\D.png', dpi=300)
