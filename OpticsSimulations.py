@@ -195,83 +195,34 @@ def IntensityProfile( n1 , n2, x , beam_waist , plot = False):
     #l = np.array( [1 , 0 , 0] )
     
     l = LaserTilt(n1,n2,A,plot = False )
-    p = np.array( [0 , 0 , -1] )
+    p = np.array( [0 , 0 , 1] )
     
     df = 2
     sigma = beam_waist
+    particle_diameter = 7*10**-6 
+    volume_fraction = 0.05
+    eta = particle_diameter * volume_fraction ** (1 /( df  - 3 ))
     
     a_0,a,b_0,b,r_0,r = BeadRayTrace(n1, n2, [x[0],x[1]] ,plot = False)
     
     theta_scattering = np.arccos( np.dot(l,b) )
-    q_scattering = 4 * np.pi * n1 * np.sin( theta_scattering / 2 )
+    q_scattering = 4 * np.pi * n1 * np.sin( theta_scattering / 2 ) / (532*10**-6)
     phi_angle = np.arccos( np.dot(p,b) )
     
-    Form_factor = 1 / (q_scattering)**df
+    Form_factor = 1 / ( 1 + (eta * q_scattering)**df)
     
     t0,tmax = LineSphereIntersection(a_0, b_0)
     
-    func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 
-    I = integrate.quad(func , t0, tmax)
+    func_isotropic = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 
+    I_0 = integrate.quad(func_isotropic , t0, tmax)
     
-    return I[0],theta_scattering
+    func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 * Form_factor 
+    I_gel = integrate.quad(func , t0, tmax)
+    
+    I = I_gel[0]/I_0[0]
+    
+    return I,theta_scattering,I_gel[0]
 
-
-def G2integral( u, q, n1 , n2, x , beam_waist , plot = False):
-    '''
-
-    
-
-    Parameters
-    ----------
-    u : TYPE
-        vector displacement.
-    q : TYPE
-        scattering vector.
-    n1 : TYPE
-        DESCRIPTION.
-    n2 : TYPE
-        DESCRIPTION.
-    x : TYPE
-        DESCRIPTION.
-    beam_waist : TYPE
-        DESCRIPTION.
-    plot : TYPE, optional
-        DESCRIPTION. The default is False.
-
-    Returns
-    -------
-    TYPE
-        DESCRIPTION.
-    theta_scattering : TYPE
-        DESCRIPTION.
-
-    '''
-    
-    zl=0.0
-    xl=np.sqrt( 1 - zl**2 )
-    A = np.array( [xl , 0 , zl] )
-    #l = np.array( [1 , 0 , 0] )
-    
-    l = LaserTilt(n1,n2,A,plot = False )
-    p = np.array( [0 , 0 , -1] )
-    
-    df = 2
-    sigma = beam_waist
-    
-    a_0,a,b_0,b,r_0,r = BeadRayTrace(n1, n2, [x[0],x[1]] ,plot = False)
-    
-    theta_scattering = np.arccos( np.dot(l,b) )
-    q_scattering = 4 * np.pi * n1 * np.sin( theta_scattering / 2 )
-    phi_angle = np.arccos( np.dot(p,b) )
-    
-    Form_factor = 1 / ( 1 + (q_scattering)**df)
-    
-    t0,tmax = LineSphereIntersection(a_0, b_0)
-    
-    func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp( -1j * np.dot(u,q)) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 * Form_factor
-    g2 = integrate.quad(func , t0, tmax)
-    
-    return g2[0]
 
 
 def LinePlaneIntersection(l_0,l):
@@ -303,38 +254,57 @@ def g2PlasticDeformation(n1,n2,x,beam_waist):
 
     
     l = LaserTilt(n1,n2,A,plot = False )
-    p = np.array( [0 , 0 , -1] )
+    p = np.array( [0 , 0 , 1] )
     
     sigma = beam_waist
     
     phi_angle = np.arccos( np.dot(p,b) )
     
-    q = (b-np.asarray([1,0,0]))* 2 * np.pi * n1 / (532*10**-6) 
+    theta_scattering = np.arccos( np.dot(l,b) )
     
-    u_x,u_y,u_z = ParametricDisplacement(a_0,b_0,x)
+    q = 4 * np.pi * n1 * np.sin( theta_scattering / 2 ) / (532*10**-6) * (-l + b) 
+     
+    
+    u_x,u_y,u_z = ParametricDisplacement(a_0,x)
     
     t0,tmax = LineSphereIntersection(a_0, b_0)
+    
+    
+    
+    df = 2
+    sigma = beam_waist
+    particle_diameter = 7*10**-6 
+    volume_fraction = 0.05
+    q_scattering = 4 * np.pi * n1 * np.sin( theta_scattering / 2 ) / (532*10**-6)
+    eta = particle_diameter * volume_fraction ** (1 /( df  - 3 ))
+    Form_factor = 1 / ( 1 + (eta * q_scattering)**df)
+    
+    
 
-    func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) ) * np.exp( -1j * ( q[0] * u_x(t) + q[1] * u_y(t) + q[2] * u_z(t)) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 
+    func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) )* np.exp( -1j * ( q[0] * u_x(t) + q[1] * u_y(t) + q[2] * u_z(t)) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 * Form_factor  
+    
+    # 
+    
     real_f = lambda t: sc.real(func(t))
     imag_f = lambda t: sc.imag(func(t))
     integ_r,bho = integrate.quad(real_f , t0, tmax)
     integ_i,bho = integrate.quad(imag_f , t0, tmax)
     
     
-    I,theta_scattering = IntensityProfile(n1, n2, x, beam_waist,plot=False)
+    I,theta_scattering,I_gel = IntensityProfile(n1, n2, x, beam_waist,plot=False)
     
     g2 = [integ_r,integ_i]
     
 
-    
-    return g2,I
+    return g2,I_gel
 
-def ParametricDisplacement(a_0,b_0,x):
+def ParametricDisplacement(a_0,x):
     
     Ri = 1.00
-    ri = 0.01
-    Rf = 1.0 - 0.35*10**-3
+    ri = 1e-4
+    dr = 0.72*10**-3
+    Rf = Ri - dr
+    O = np.asarray([0,0,0])
     
     C =  1 / ( Ri + ri**3 / Ri**2 ) * ( Rf - Ri )
     E = - C * ri**3
@@ -342,21 +312,27 @@ def ParametricDisplacement(a_0,b_0,x):
     theta = np.arctan( np.sqrt( a_0[0]**2 + a_0[1]**2 ) / a_0[2])
     phi = np.arctan( a_0[1] / a_0[0] )
     
-    d = lambda t: np.linalg.norm( t * (a_0 - b_0)   )
-    
-    u_r = lambda t: C * d(t) + E / d(t)**2
+    if a_0[0] !=  11111110 :
+        
+        d = lambda t: np.linalg.norm( t * (a_0 - O)   )
+        u_r = lambda t: C * d(t) + E / d(t)**2
+    else:
+        u_r = lambda t: t * 0
+        
     
     u_x = lambda t: u_r(t) * np.sin(theta) * np.cos(phi)
     u_y = lambda t: u_r(t) * np.sin(theta) * np.sin(phi)
     u_z = lambda t: u_r(t) * np.cos(theta)
+        
+        
     
     
     return u_x,u_y,u_z
 
 def g2Simulation(n1,n2,x_0 ,beam_waist):
     
-    speckle_size_x = 0.01
-    speckle_size_z = 0.01 
+    speckle_size_x = 0.03
+    speckle_size_z = 0.01
     
     step_x = 5
     step_z = 5 
@@ -383,9 +359,22 @@ def g2Simulation(n1,n2,x_0 ,beam_waist):
     normalization = np.sum( np.asarray(Int) )
     
     G2 = ( integral_r**2 + integral_i**2 )  / (normalization**2 )
+    print('n :' + str(integral_r**2 + integral_i**2))
+    print('d :' + str(normalization**2))
     
     return G2
-'''
+
+
+def truncate(n, decimals=0):
+    multiplier = 10 ** decimals
+    
+    try:
+        n_ = int(n * multiplier) / multiplier
+        
+    except ValueError:
+        n_ = n
+    return n_
+
 ########## CHECK AT Z = 0 ###########
 
 line = np.linspace(-1,1,50)
@@ -393,37 +382,47 @@ point = []
 
 
 for j in range(len(line)):
-    I,theta_scattering = IntensityProfile(n1 = 1.33, n2 = 1, x = [line[j],0], beam_waist=0.2,plot=True)
-    point.append(np.array([line[j],0,I,theta_scattering*180/np.pi]))
+    I,theta_scattering,Ig = IntensityProfile(n1 = 1.33, n2 = 1, x = [line[j],0], beam_waist=0.05,plot=True)
+    q_scattering = 4 * np.pi * 1.33 * np.sin( theta_scattering / 2 ) / (532*10**-6)
+    point.append(np.array([line[j],0,I,theta_scattering*180/np.pi,q_scattering]))
     
-
-x_=[]
-z_=[]
-Intesity_=[]
-theta_s_=[]
+    
+x_ = []
+z_ = []
+Intesity_ = []
+theta_s_ = []
+q_ = []
 
 for i in range(len(point)):
     x_.append(point[i][0])
     z_.append(point[i][1])
     Intesity_.append(point[i][2])
     theta_s_.append(point[i][3])
+    q_.append(point[i][4]) 
 
 plt.figure()
-plt.plot(x_,Intesity_,'o')
-plt.xlabel("x")
-plt.ylabel("scattering angle [grad]")
+plt.plot(x_[1:-1],Intesity_[1:-1],'o')
+plt.xlabel("x [mm]")
+plt.ylabel("intasity [a.u.]")
 plt.legend(loc='upper left')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Intesity_plot_.png', dpi=300)
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\Intesity_plot_.png', dpi=300)
+
+plt.figure()
+plt.loglog(q_[1:-1],Intesity_[1:-1],'o')
+plt.xlabel("q [m-1]")
+plt.ylabel("intasity [a.u.]")
+plt.legend(loc='upper left')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\Intesity_plot_q_fun.png', dpi=300)
 
 plt.figure()
 plt.plot(x_,theta_s_,'o')
 plt.xlabel("x")
 plt.ylabel("scattering angle [grad]")
 plt.legend(loc='upper left')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\theta_plot_.png', dpi=300)
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\Scatt_ang_plot_.png', dpi=300)
 
 ########## COMPLETE PROGRAM ###########
-
+'''
 raw = np.linspace(-1,1,70)
 columns = np.linspace(-1,1,70)
 points = []
@@ -431,7 +430,7 @@ dpoints = []
 
 for i in range(len(columns)):
     for j in range(len(raw)):
-        I,theta_scattering = IntensityProfile(n1 = 1.36, n2 = 1, x = [raw[j],columns[i]], beam_waist=0.2,plot=False)
+        I,theta_scattering,Ig = IntensityProfile(n1 = 1.36, n2 = 1, x = [raw[j],columns[i]], beam_waist=0.15,plot=False)
         dx,dz,d = DifferentialPath(n1 = 1.36, n2 = 1, x = [raw[j],columns[i]],plot=False)
         points.append(np.array([raw[j],columns[i],I,theta_scattering*180/np.pi]))
         dpoints.append(np.array([dx,dz,d]))
@@ -465,7 +464,7 @@ clb = plt.colorbar()
 clb.set_label('Intensity', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
 plt.title('Intesity plot')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Intesity_plot.png', dpi=300)
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\Intesity_plot.png', dpi=300)
 
 plt.figure()
 plt.scatter(x, z, c=theta_s)
@@ -478,7 +477,7 @@ clb = plt.colorbar()
 clb.set_label('Scattering angle ', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
 plt.title('Scattering angle plot')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\scattang_plot.png', dpi=300)
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\scattang_plot.png', dpi=300)
 
 plt.figure()
 plt.scatter(x, z, c=Dx)
@@ -491,7 +490,7 @@ clb = plt.colorbar()
 clb.set_label('Dx ', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
 plt.title('Dx')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Dx.png', dpi=300)
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\Dx.png', dpi=300)
 
 plt.figure()
 plt.scatter(x, z, c=Dz)
@@ -504,7 +503,7 @@ clb = plt.colorbar()
 clb.set_label('Dz ', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
 plt.title('Dz plot')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Dz.png', dpi=300)
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\Dz.png', dpi=300)
 
 plt.figure()
 plt.scatter(x, z, c=D)
@@ -517,34 +516,39 @@ clb = plt.colorbar()
 clb.set_label('Dz ', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
 plt.title('Dz plot')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\D.png', dpi=300)
-'''
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\D.png', dpi=300)
+
 
 ############################################    DISPLACEMENT FIELD SIMULATION BLOCK #################################
+'''
+#g2real3 = g2Simulation(n1 = 1.33,n2 = 1,x_0 = [-0.01,0.7],beam_waist=0.1)
 
 
 g2real = g2Simulation(n1 = 1.33,n2 = 1,x_0 = [0.9,0.0],beam_waist=0.1)
 
 
 raw = np.linspace(-1,1,50)
-columns = np.linspace(-1,1,50)
+columns = np.linspace(-0.8,0.8,1)
 points = []
 dpoints = []
 
 for i in range(len(columns)):
     for j in range(len(raw)):
-        g2real = g2Simulation(n1 = 1.33,n2 = 1,x_0 = [raw[j],columns[i]],beam_waist=0.1)
-        points.append(np.array([raw[j],columns[i],g2real]))
+        g2real = g2Simulation(n1 = 1.33,n2 = 1,x_0 = [raw[j],0],beam_waist=0.1)
+        points.append(np.array([raw[j],0,g2real]))
     
 
 x=[]
 z=[]
 G2=[]
+Qtau=[]
 
 for i in range(len(points)):
     x.append(points[i][0])
     z.append(points[i][1])
     G2.append(points[i][2])
+    Qtau.append(q_[i] * -20/np.log(np.asarray(points[i][2])) )
+
 
 
 plt.figure()
@@ -555,7 +559,34 @@ plt.legend(loc='upper left')
 theta = np.linspace(0, 2 * np.pi ,1000)
 plt.plot( np.cos(theta),  np.sin(theta))
 clb = plt.colorbar()
-clb.set_label('G2', labelpad=10, rotation=270)
+clb.set_label('g2-1', labelpad=10, rotation=270)
 plt.axes().set_aspect('equal', 'datalim')
-plt.title('Intesity plot')
-plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\G2_plot.png', dpi=300)
+plt.title('g2-1 plot')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\G2_plot_.png', dpi=300)
+
+
+tau = -20/np.log(np.asarray(G2))
+plt.figure()
+plt.plot(x,G2,'o')
+plt.xlabel("x [mm]")
+plt.ylabel("tau [s]")
+plt.legend(loc='upper left')
+plt.title('tau plot')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\g2_plot_LEFT.png', dpi=300)
+
+plt.figure()
+plt.semilogy(x,tau,'o')
+plt.xlabel("x [mm]")
+plt.ylabel("tau [s]")
+plt.legend(loc='upper left')
+plt.title('tau plot')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\tau_plot_LEFT.png', dpi=300)
+
+
+plt.figure()
+plt.semilogy(x,Qtau,'o')
+plt.xlabel("x [mm]")
+plt.ylabel("tau [s]")
+plt.legend(loc='upper left')
+plt.title('tau plot')
+plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\tau_plot_LEFT.png', dpi=300)
