@@ -262,10 +262,12 @@ def g2PlasticDeformation(n1,n2,x,beam_waist):
     
     theta_scattering = np.arccos( np.dot(l,b) )
     
-    q = 4 * np.pi * n1 * np.sin( theta_scattering / 2 ) / (532*10**-6) * (-l + b) 
-     
+    q = 4 * np.pi * n1 * np.sin( theta_scattering / 2 ) / (532*10**-6) * ( b - l ) / np.linalg.norm(b - l )
     
-    u_x,u_y,u_z = ParametricDisplacement(a_0,x)
+    print('q : ' + str(q))
+    print('norm q : ' + str(np.linalg.norm(q)))
+    
+    u_x,u_y,u_z = ParametricDisplacement(a_0,b_0,x)
     
     t0,tmax = LineSphereIntersection(a_0, b_0)
     
@@ -283,7 +285,7 @@ def g2PlasticDeformation(n1,n2,x,beam_waist):
 
     func = lambda t:  1 / ( sigma *np.sqrt( 2 * np.pi ) )* np.exp( -1j * ( q[0] * u_x(t) + q[1] * u_y(t) + q[2] * u_z(t)) ) * np.exp(- np.linalg.norm(np.cross( (a_0 - t * b - A),l )) **2 / sigma**2) * np.sin( phi_angle )**2 * Form_factor  
     
-    # 
+    
     
     real_f = lambda t: sc.real(func(t))
     imag_f = lambda t: sc.imag(func(t))
@@ -298,11 +300,11 @@ def g2PlasticDeformation(n1,n2,x,beam_waist):
 
     return g2,I_gel
 
-def ParametricDisplacement(a_0,x):
+def ParametricDisplacement(a_0,b_0,x):
     
     Ri = 1.00
-    ri = 1e-4
-    dr = 0.72*10**-3
+    ri = 1e-8
+    dr = 7.8*1e-4
     Rf = Ri - dr
     O = np.asarray([0,0,0])
     
@@ -314,7 +316,7 @@ def ParametricDisplacement(a_0,x):
     
     if a_0[0] !=  11111110 :
         
-        d = lambda t: np.linalg.norm( t * (a_0 - O)   )
+        d = lambda t: np.linalg.norm( t * (a_0 - b_0)   )
         u_r = lambda t: C * d(t) + E / d(t)**2
     else:
         u_r = lambda t: t * 0
@@ -331,8 +333,8 @@ def ParametricDisplacement(a_0,x):
 
 def g2Simulation(n1,n2,x_0 ,beam_waist):
     
-    speckle_size_x = 0.03
-    speckle_size_z = 0.01
+    speckle_size_x = 0.013
+    speckle_size_z = 0.005
     
     step_x = 5
     step_z = 5 
@@ -527,8 +529,8 @@ plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\D.png', dpi=300)
 g2real = g2Simulation(n1 = 1.33,n2 = 1,x_0 = [0.9,0.0],beam_waist=0.1)
 
 
-raw = np.linspace(-1,1,50)
-columns = np.linspace(-0.8,0.8,1)
+raw = np.linspace(-1,1,10)
+columns = np.linspace(-1,1,1)
 points = []
 dpoints = []
 
@@ -547,7 +549,7 @@ for i in range(len(points)):
     x.append(points[i][0])
     z.append(points[i][1])
     G2.append(points[i][2])
-    Qtau.append(q_[i] * -20/np.log(np.asarray(points[i][2])) )
+    #Qtau.append(q_[i] * -20/np.log(np.asarray(points[i][2])) )
 
 
 
@@ -582,7 +584,7 @@ plt.legend(loc='upper left')
 plt.title('tau plot')
 plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\tau_plot_LEFT.png', dpi=300)
 
-
+'''
 plt.figure()
 plt.semilogy(x,Qtau,'o')
 plt.xlabel("x [mm]")
@@ -590,3 +592,4 @@ plt.ylabel("tau [s]")
 plt.legend(loc='upper left')
 plt.title('tau plot')
 plt.savefig('C:\\Users\\Matteo\\Desktop\\PHD\\Fig_simulations\\tau_plot_LEFT.png', dpi=300)
+'''
